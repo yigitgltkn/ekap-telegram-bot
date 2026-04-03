@@ -1,0 +1,41 @@
+name: HLC EPC Ihale Radari
+
+on:
+  schedule:
+    # Hafta içi her gün (1-5), Türkiye saati 08:30 (UTC'de 05:30'a denk gelir)
+    - cron: '30 5 * * 1-5'
+  workflow_dispatch: # GitHub üzerinden manuel "Şimdi Çalıştır" butonu
+
+permissions:
+  contents: write # Botun yeni ihaleleri txt dosyasına yazıp kaydedebilmesi için
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodları Klonla
+        uses: actions/checkout@v3
+
+      - name: Python 3.10 Kurulumu
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Gerekli Kütüphaneleri Yükle
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: HLC EPC Botunu Çalıştır
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ADMIN_CHAT_ID: ${{ secrets.ADMIN_CHAT_ID }}
+        run: python main.py
+
+      - name: Bot Hafızasını (.txt) GitHub'a Geri Kaydet
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add local_sent_ihales.txt
+          git commit -m "🤖 Hafıza güncellendi: Yeni ihaleler işlendi" || echo "Yeni ihale yok, kayıt atlandı."
+          git push
