@@ -6,7 +6,7 @@ Markdown
 ![Telegram API](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
-HLC EPC İhale Radarı, EKAP (Elektronik Kamu Alımları Platformu) üzerinde yayınlanan altyapı, SCADA, otomasyon ve su yapıları (isale hattı, arıtma vb.) ihalelerini 7/24 izleyen, süzen ve kritik projeleri doğrudan Telegram grubuna raporlayan **tam otonom bir iş geliştirme asistanıdır.**
+EKAP ihale radari, EKAP (Elektronik Kamu Alımları Platformu) üzerinde yayınlanan altyapı, SCADA, otomasyon ve su yapıları (isale hattı, arıtma vb.) ihalelerini 7/24 izleyen, süzen ve kritik projeleri doğrudan Telegram grubuna raporlayan **tam otonom bir iş geliştirme asistanıdır.**
 
 Sistem; sıradan bir web kazıyıcı (scraper) değil, bütçe sınırlarını, ihale usullerini ve KİK yasal bedellerini analiz eden akıllı bir mühendislik botudur.
 
