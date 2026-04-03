@@ -10,6 +10,8 @@ HLC EPC İhale Radarı, EKAP (Elektronik Kamu Alımları Platformu) üzerinde ya
 
 Sistem; sıradan bir web kazıyıcı (scraper) değil, bütçe sınırlarını, ihale usullerini ve KİK yasal bedellerini analiz eden akıllı bir mühendislik botudur.
 
+---
+
 ## 🔥 Temel Özellikler
 
 * **🧠 Akıllı Filtreleme Algoritması:** 5.000.000 TL altındaki bütçeleri, 21/f (pazarlık) ve doğrudan temin usullerini, standart mal/hizmet alımlarını otomatik eler. Sadece devasa EPC projelerine odaklanır.
@@ -17,6 +19,8 @@ Sistem; sıradan bir web kazıyıcı (scraper) değil, bütçe sınırlarını, 
 * **🇹🇷 Türkçe Karakter Zekası:** Gelişmiş Regex altyapısı ile Python'un Türkçe karakter (I/i, Ş/ş) körlüğünü aşar. "Arıtma", "İsale" gibi kelimeleri hatasız eşleştirir.
 * **💾 Kusursuz Hafıza (Amnesia Proof):** Bulunan her ihalenin İKN'sini (İhale Kayıt Numarası) kaydeder. Aynı ihale asla ikinci kez Telegram'a düşmez.
 * **☁️ %100 Bulut Otomasyonu:** GitHub Actions entegrasyonu sayesinde hiçbir fiziksel sunucuya veya açık bilgisayara ihtiyaç duymaz. Her sabah Türkiye saati ile belirlenen vakitte uyanır, görevini yapar ve kapanır.
+
+---
 
 ## 🛠️ Kullanılan Teknolojiler
 
@@ -26,24 +30,29 @@ Sistem; sıradan bir web kazıyıcı (scraper) değil, bütçe sınırlarını, 
 * **Regex (re):** Karmaşık bütçe metinlerini ve ihale başlıklarını ayrıştırmak için.
 * **GitHub Actions (CI/CD):** Zamanlanmış (Cron) görev yönetimi ve bulut sunucu altyapısı.
 
+---
+
 ## ⚙️ Kurulum & Lokal Test
 
 Projeyi kendi bilgisayarında test etmek istersen aşağıdaki adımları izleyebilirsin:
 
 **1. Repoyu Klonla:**
+```bash
 git clone [https://github.com/KULLANICI_ADIN/hlc-epc-ihale-radari.git](https://github.com/KULLANICI_ADIN/hlc-epc-ihale-radari.git)
 cd hlc-epc-ihale-radari
-
 2. Gerekli Kütüphaneleri Yükle:
-pip install -r requirements.txt
 
-4. Çevre Değişkenlerini (Environment Variables) Ayarla:
+Bash
+pip install -r requirements.txt
+3. Çevre Değişkenlerini (Environment Variables) Ayarla:
 Proje dizininde bir .env dosyası oluşturun ve Telegram kimlik bilgilerinizi girin:
 
+Kod snippet'i
 TELEGRAM_BOT_TOKEN=senin_bot_tokenin_buraya
 ADMIN_CHAT_ID=senin_grup_id_numaran_buraya
 4. Botu Ateşle:
 
+Bash
 python main.py
 ☁️ GitHub Actions İle Bulut Dağıtımı (Deployment)
 Sistemin otomatik çalışması için .env dosyasındaki şifreleri GitHub repository'sine eklemeniz yeterlidir:
@@ -67,4 +76,6 @@ Plaintext
 ⚖️ İtirazen Şikayet Başvuru Bedeli: 194.085 TL
 ⏰ Son Teklif: 15.04.2026 10:00
 
+(Kopyalamak için İKN ve Tarih'in üzerine dokunun)
+#HLC #EPC #Altyapı
 Geliştirici Notu: Bu sistem, manuel ihale tarama süreçlerinde harcanan yüzlerce saatlik insan emeğini sıfıra indirmek ve şirket portföyüne en uygun projeleri "ilk duyan" olmak amacıyla yüksek mühendislik standartlarında tasarlanmıştır.
