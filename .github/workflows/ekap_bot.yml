@@ -3,7 +3,7 @@ name: HLC EPC Ihale Radari
 on:
   schedule:
     # Hafta içi her gün (1-5), Türkiye saati 08:30 (UTC'de 05:30'a denk gelir)
-    - cron: '30 5 * * 1-5'
+    - cron: '37 7 * * 1-5'
   workflow_dispatch: # GitHub üzerinden manuel "Şimdi Çalıştır" butonu
 
 permissions:
