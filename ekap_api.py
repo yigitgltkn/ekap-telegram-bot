@@ -106,26 +106,46 @@ class EKAPAPI:
         return filtered
 
     def get_ihale_detail(self, ihale_id):
+        url = f"{self.base_url}/GetById/{ihale_id}"
+        print(f"\n🕵️ DETAY RÖNTGENİ -> ID: {ihale_id}")
+        print(f"🕵️ GİDİLEN URL: {url}")
+        
         try:
-            url = f"{self.base_url}/GetById/{ihale_id}"
             response = self.session.get(url, timeout=10)
-            if response.status_code == 200:
-                return response.json().get('teklifVermeGunSaat') or 'Belirtilmemiş'
-        except Exception: pass
-        return 'Belirtilmemiş'
-
-    def get_ihale_fiyat(self, ihale_id, liste_fiyati):
-        if liste_fiyati and str(liste_fiyati) not in ('', 'None', 'Sistemde Görünmüyor'):
-            return self._fiyat_formatla(liste_fiyati)
-        try:
-            url = f"{self.base_url}/GetById/{ihale_id}"
-            response = self.session.get(url, timeout=10)
+            print(f"🕵️ YANIT KODU: {response.status_code}")
+            
             if response.status_code == 200:
                 detail = response.json()
-                detay_fiyat = detail.get('yaklasikMaliyet') or detail.get('yaklasikMaliyetTL') or detail.get('tahminiMaliyet')
-                if detay_fiyat: return self._fiyat_formatla(detay_fiyat)
-        except Exception: pass
-        return 'Sistemde Görünmüyor'
+                print(f"🕵️ GELEN JSON ANAHTARLARI: {list(detail.keys())}")
+                
+                # Eğer EKAP verileri 'data' adında bir alt klasöre sakladıysa:
+                if 'data' in detail and isinstance(detail['data'], dict):
+                    detail = detail['data']
+                    print("🕵️ 'data' klasörü bulundu, içine girildi.")
+                
+                son_teklif = detail.get('teklifVermeGunSaat') or detail.get('ihaleTarihSaat') or 'Belirtilmemiş'
+                ihale_durumu = detail.get('ihaleDurum') or detail.get('ihaleDurumu') or detail.get('ihaleDurumuAciklama') or 'Sistemde Görünmüyor'
+                isin_yeri = detail.get('isinYapilacagiYer') or detail.get('isYapilacagiYer') or detail.get('isYeri') or 'Sistemde Görünmüyor'
+                ihale_yeri = detail.get('ihaleYeri') or detail.get('ihaleninYapilacagiYer') or detail.get('ihaleAdresi') or 'Sistemde Görünmüyor'
+                
+                return {
+                    'son_teklif': son_teklif,
+                    'ihale_durumu': str(ihale_durumu),
+                    'isin_yeri': str(isin_yeri),
+                    'ihale_yeri': str(ihale_yeri)
+                }
+            else:
+                print(f"⚠️ API Hata Mesajı: {response.text[:150]}")
+                
+        except Exception as e:
+            print(f"❌ KOD ÇÖKTÜ: {e}")
+            
+        return {
+            'son_teklif': 'Belirtilmemiş',
+            'ihale_durumu': 'Sistemden Çekilemedi',
+            'isin_yeri': 'Sistemden Çekilemedi',
+            'ihale_yeri': 'Sistemden Çekilemedi'
+        }
 
     def _fiyat_formatla(self, deger):
         try:
