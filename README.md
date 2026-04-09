@@ -6,79 +6,13 @@ Markdown
 ![Telegram API](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
-💧 EKAP Tender Tracker (HLC EPC Service)
-Bu proje, EKAP (Elektronik Kamu Alımları Platformu) üzerinden belirli anahtar kelimelerle (SCADA, Otomasyon, GES, RES, Altyapı vb.) otomatik olarak ihale takibi yapan ve kriterlere uygun yeni ihaleleri Telegram üzerinden anlık olarak bildiren bir Python otomasyonudur.
-
-Özellikle EPC (Mühendislik, Tedarik ve Kurulum) projelerine odaklanan gelişmiş bir filtreleme mekanizmasına sahiptir.
-
-✨ Öne Çıkan Özellikler
-🔍 Akıllı Arama: Sadece ihale adını değil, EKAP'ın derinliklerindeki teknik detayları tarar.
-
-🛡️ Gelişmiş Filtreleme: EPC dışı işleri (sadece malzeme alımı, sadece danışmanlık/çizim vb.) negatif anahtar kelime listesiyle otomatik eler.
-
-🤖 Anti-Bot Koruması: EKAP'ın güncel Angular altyapısına ve SSL engellerine uyumlu tarama motoru.
-
-🧠 Akıllı Hafıza: Gönderilen ihaleleri local_sent_ihales.txt dosyasında tutar; aynı ihaleyi asla tekrar göndermez.
-
-⚡ Telegram Entegrasyonu: İhale detaylarını (İKN, İdare, Tür, Tarih) şık bir formatla anlık mesaj olarak iletir.
-
-🛠️ Teknik Altyapı
-Dil: Python 3.x
-
-Motor: Playwright (Tarayıcı otomasyonu için)
-
-İletişim: Requests (API entegrasyonu için)
-
-Veri Formatı: JSON & HTML Parsing
-
-🚀 Kurulum ve Çalıştırma
-1. Depoyu Klonlayın
-Bash
-git clone https://github.com/kullaniciadi/proje-adi.git
-cd proje-adi
-2. Sanal Ortamı Oluşturun ve Aktif Edin
-Bash
-python -m venv venv
-# Windows için:
-.\venv\Scripts\activate
-# Linux/Mac için:
-source venv/bin/activate
-3. Gerekli Kütüphaneleri Yükleyin
-Bash
-pip install requests python-dotenv playwright
+ HLC EPC Tender IntelligenceAn Advanced Automated Procurement Tracking System for EPC & Industrial AutomationHLC EPC Tender Intelligence, EKAP (Elektronik Kamu Alımları Platformu) üzerindeki devasa veri yığınını gerçek zamanlı olarak tarayan, GES, RES, HES, SCADA ve Altyapı gibi yüksek bütçeli EPC projelerini ayıklayan bir "Business Intelligence" (İş Zekası) aracıdır.🎯 Neden Bu Proje?EKAP'ın modern Angular altyapısı ve sıkı SSL güvenlik duvarları, standart botların veri çekmesini zorlaştırır. Bu sistem, v6.0 Hayalet Motor teknolojisi ile:Anti-Bot Bypass: Sunucuyu "gerçek bir kullanıcı" olduğuna ikna eden TLS/SSL parmak izi taklidi yapar.EPC Focused: Sadece "ihale" değil, "yapım ve mühendislik" ağırlıklı işleri filtreler (Müşavirlik veya küçük malzeme alımlarını eler).Zero Duplication: Akıllı set-logic hafızası ile aynı ihaleyi asla ikinci kez raporlamaz.🛠️ Temel ÖzelliklerÖzellikAçıklama🔍 Multi-Vector SearchSCADA, Otomasyon, GES gibi anahtar kelimelerle çapraz tarama.🛡️ Smart Filtering5M TL altındaki veya "Negatif Liste"deki işlerin otomatik eliminasyonu.🚀 Direct API AccessSayfa yüklemeden, doğrudan sunucu endpoint'lerinden saniyelik veri çekimi.📱 Telegram DashboardİKN, Tarih ve Kurum bilgilerini Telegram üzerinden interaktif linklerle sunma.🧠 Çalışma Mantığı (Secret Sauce)Sistem üç ana fazda çalışır:Scouting: Playwright motoru EKAP ana sayfasında hedef anahtar kelimeleri simüle eder.Deep Crawling: Bulunan ihalelerin detayları, EKAP sunucularına atılan gizli POST istekleri (v5.2 API Engine) ile saniyeler içinde çözülür.Intelligence Reporting: Elde edilen saf veri, şirket içi filtrelere tabi tutulur ve sadece "Yüksek Potansiyelli" olanlar Telegram'a iletilir.🚀 Hızlı Başlangıç1. Ortamı HazırlayınBashpython -m venv venv
+source venv/bin/activate  # Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
 playwright install chromium
-4. Yapılandırma
-Klasör dizininde bir .env dosyası oluşturun ve bilgilerinizi girin:
-
-Kod snippet'i
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-ADMIN_CHAT_ID=your_chat_id_here
-config.py dosyasını düzenleyerek takip etmek istediğiniz sektörleri (GES, RES, Otomasyon vb.) ve elenmesini istediğiniz kelimeleri özelleştirebilirsiniz.
-
-5. Çalıştırın
-Bash
-python main.py
-📂 Dosya Yapısı
-main.py: Ana döngüyü yöneten ve Telegram gönderimlerini yapan ana dosya.
-
-ekap_api.py: EKAP üzerindeki tarama, tıklama ve veri çekme mantığını içeren motor.
-
-config.py: Anahtar kelimeler, negatif kelimeler ve genel ayarlar.
-
-local_sent_ihales.txt: Botun daha önce gönderdiği ihaleleri unutmamak için kullandığı yerel veritabanı.
-
-⚖️ Yasal Uyarı
-Bu proje sadece eğitim ve kişisel verimlilik amaçlıdır. Kamu platformlarının kullanım koşullarına ve veri çekme (scraping) politikalarına uyulması kullanıcının sorumluluğundadır.
-
-HLC Endüstriyel Otomasyon & EPC Çözümleri için geliştirilmiştir. 🚀
-
-Küçük Bir Tavsiye:
-GitHub'a yüklemeden önce klasöründe bir .gitignore dosyası oluşturup içine şunları yazmayı unutma; böylece özel şifrelerin (Token) ve gereksiz dosyalar internete sızmaz:
-
-Plaintext
-.env
-venv/
-__pycache__/
-local_sent_ihales.txt
-*.png
-Geliştirici Notu: Bu sistem, manuel ihale tarama süreçlerinde harcanan yüzlerce saatlik insan emeğini sıfıra indirmek ve şirket portföyüne en uygun projeleri "ilk duyan" olmak amacıyla yüksek mühendislik standartlarında tasarlanmıştır.
+2. Yapılandırma (.env)Proje kök dizininde bir .env dosyası oluşturun:Kod snippet'iTELEGRAM_BOT_TOKEN=123456789:ABCDEF...
+ADMIN_CHAT_ID=-100123456789
+3. ÇalıştırınBashpython main.py
+⚙️ Özelleştirme (config.py)Proje tamamen modülerdir. Sektörünüzü genişletmek için SEARCH_KEYWORDS listesine yeni dikeyler ekleyebilirsiniz:Python# Örnek: Yenilenebilir Enerji dikeyi ekleme
+ENERJI_KELIMELERI = ["Güneş Enerjisi", "GES", "RES", "HES"]
+🗺️ Yol Haritası (Roadmap)[x] API tabanlı hızlı veri çekme motoru.[x] SSL/TLS handshake sorunlarının çözümü.[ ] AI-Powered Analysis: İhale dökümanlarını (PDF) okuyup teknik yeterlilik analizi yapma.[ ] Web Dashboard: Geçmiş ihalelerin grafiksel analizi.[ ] Multi-Admin: Farklı departmanlara farklı ihale kategorileri gönderme.🤝 Katkıda BulunmaBu bir açık kaynak EPC çözümüdür. Katkılarınızı (Pull Request) bekliyoruz!Projeyi Fork'layın.Özelliğinizi geliştirin (git checkout -b feature/AmazingFeature).Commit'leyin (git commit -m 'Add: New Anti-Bot Logic').Push'layın (git push origin feature/AmazingFeature).Pull Request açın.📬 İletişim & DestekHLC EPC Automation Team📧 [Sizin Mail Adresiniz]🔗 [Varsa Şirket Web Siteniz]Küçük Bir İpucu:GitHub sayfanın sağ tarafındaki "About" kısmına şu etiketleri (Tags) mutlaka ekle:python, scraping, playwright, automation, procurement, bot, telegram-bot, epc, scada.
