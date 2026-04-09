@@ -9,7 +9,7 @@ def main():
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     env_path = os.path.join(BASE_DIR, '.env')
-    sent_file = os.path.join(BASE_DIR, "local_sent_ihales.txt")
+    sent_file = os.path.join(BASE_DIR, "ihaleler_liste.txt")
 
     load_dotenv(env_path)
 
