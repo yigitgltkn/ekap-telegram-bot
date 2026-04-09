@@ -6,76 +6,79 @@ Markdown
 ![Telegram API](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
-EKAP ihale radari, EKAP (Elektronik Kamu Alımları Platformu) üzerinde yayınlanan altyapı, SCADA, otomasyon ve su yapıları (isale hattı, arıtma vb.) ihalelerini 7/24 izleyen, süzen ve kritik projeleri doğrudan Telegram grubuna raporlayan **tam otonom bir iş geliştirme asistanıdır.**
+💧 EKAP Tender Tracker (HLC EPC Service)
+Bu proje, EKAP (Elektronik Kamu Alımları Platformu) üzerinden belirli anahtar kelimelerle (SCADA, Otomasyon, GES, RES, Altyapı vb.) otomatik olarak ihale takibi yapan ve kriterlere uygun yeni ihaleleri Telegram üzerinden anlık olarak bildiren bir Python otomasyonudur.
 
-Sistem; sıradan bir web kazıyıcı (scraper) değil, bütçe sınırlarını, ihale usullerini ve KİK yasal bedellerini analiz eden akıllı bir mühendislik botudur.
+Özellikle EPC (Mühendislik, Tedarik ve Kurulum) projelerine odaklanan gelişmiş bir filtreleme mekanizmasına sahiptir.
 
----
+✨ Öne Çıkan Özellikler
+🔍 Akıllı Arama: Sadece ihale adını değil, EKAP'ın derinliklerindeki teknik detayları tarar.
 
-## 🔥 Temel Özellikler
+🛡️ Gelişmiş Filtreleme: EPC dışı işleri (sadece malzeme alımı, sadece danışmanlık/çizim vb.) negatif anahtar kelime listesiyle otomatik eler.
 
-* **🧠 Akıllı Filtreleme Algoritması:** 5.000.000 TL altındaki bütçeleri, 21/f (pazarlık) ve doğrudan temin usullerini, standart mal/hizmet alımlarını otomatik eler. Sadece devasa EPC projelerine odaklanır.
-* **⚖️ KİK İtirazen Şikayet Bedeli Hesaplayıcı:** İhalenin yaklaşık maliyetine göre 2026 Kamu İhale Kurumu tarifesi üzerinden güncel başvuru bedelini anında hesaplar ve rapora ekler.
-* **🇹🇷 Türkçe Karakter Zekası:** Gelişmiş Regex altyapısı ile Python'un Türkçe karakter (I/i, Ş/ş) körlüğünü aşar. "Arıtma", "İsale" gibi kelimeleri hatasız eşleştirir.
-* **💾 Kusursuz Hafıza (Amnesia Proof):** Bulunan her ihalenin İKN'sini (İhale Kayıt Numarası) kaydeder. Aynı ihale asla ikinci kez Telegram'a düşmez.
-* **☁️ %100 Bulut Otomasyonu:** GitHub Actions entegrasyonu sayesinde hiçbir fiziksel sunucuya veya açık bilgisayara ihtiyaç duymaz. Her sabah Türkiye saati ile belirlenen vakitte uyanır, görevini yapar ve kapanır.
+🤖 Anti-Bot Koruması: EKAP'ın güncel Angular altyapısına ve SSL engellerine uyumlu tarama motoru.
 
----
+🧠 Akıllı Hafıza: Gönderilen ihaleleri local_sent_ihales.txt dosyasında tutar; aynı ihaleyi asla tekrar göndermez.
 
-## 🛠️ Kullanılan Teknolojiler
+⚡ Telegram Entegrasyonu: İhale detaylarını (İKN, İdare, Tür, Tarih) şık bir formatla anlık mesaj olarak iletir.
 
-* **Python 3.10:** Temel programlama dili.
-* **Cloudscraper:** EKAP'ın Cloudflare ve bot koruma güvenlik duvarlarını yasal sınırlar içinde aşmak için.
-* **Requests:** Telegram Bot API ile kusursuz haberleşme.
-* **Regex (re):** Karmaşık bütçe metinlerini ve ihale başlıklarını ayrıştırmak için.
-* **GitHub Actions (CI/CD):** Zamanlanmış (Cron) görev yönetimi ve bulut sunucu altyapısı.
+🛠️ Teknik Altyapı
+Dil: Python 3.x
 
----
+Motor: Playwright (Tarayıcı otomasyonu için)
 
-## ⚙️ Kurulum & Lokal Test
+İletişim: Requests (API entegrasyonu için)
 
-Projeyi kendi bilgisayarında test etmek istersen aşağıdaki adımları izleyebilirsin:
+Veri Formatı: JSON & HTML Parsing
 
-**1. Repoyu Klonla:**
-```bash
-git clone [https://github.com/KULLANICI_ADIN/hlc-epc-ihale-radari.git](https://github.com/KULLANICI_ADIN/hlc-epc-ihale-radari.git)
-cd hlc-epc-ihale-radari
-2. Gerekli Kütüphaneleri Yükle:
-
+🚀 Kurulum ve Çalıştırma
+1. Depoyu Klonlayın
 Bash
-pip install -r requirements.txt
-3. Çevre Değişkenlerini (Environment Variables) Ayarla:
-Proje dizininde bir .env dosyası oluşturun ve Telegram kimlik bilgilerinizi girin:
+git clone https://github.com/kullaniciadi/proje-adi.git
+cd proje-adi
+2. Sanal Ortamı Oluşturun ve Aktif Edin
+Bash
+python -m venv venv
+# Windows için:
+.\venv\Scripts\activate
+# Linux/Mac için:
+source venv/bin/activate
+3. Gerekli Kütüphaneleri Yükleyin
+Bash
+pip install requests python-dotenv playwright
+playwright install chromium
+4. Yapılandırma
+Klasör dizininde bir .env dosyası oluşturun ve bilgilerinizi girin:
 
 Kod snippet'i
-TELEGRAM_BOT_TOKEN=senin_bot_tokenin_buraya
-ADMIN_CHAT_ID=senin_grup_id_numaran_buraya
-4. Botu Ateşle:
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+ADMIN_CHAT_ID=your_chat_id_here
+config.py dosyasını düzenleyerek takip etmek istediğiniz sektörleri (GES, RES, Otomasyon vb.) ve elenmesini istediğiniz kelimeleri özelleştirebilirsiniz.
 
+5. Çalıştırın
 Bash
 python main.py
-☁️ GitHub Actions İle Bulut Dağıtımı (Deployment)
-Sistemin otomatik çalışması için .env dosyasındaki şifreleri GitHub repository'sine eklemeniz yeterlidir:
+📂 Dosya Yapısı
+main.py: Ana döngüyü yöneten ve Telegram gönderimlerini yapan ana dosya.
 
-Deponuzda Settings > Secrets and variables > Actions yolunu izleyin.
+ekap_api.py: EKAP üzerindeki tarama, tıklama ve veri çekme mantığını içeren motor.
 
-TELEGRAM_BOT_TOKEN ve ADMIN_CHAT_ID anahtarlarını New repository secret olarak ekleyin.
+config.py: Anahtar kelimeler, negatif kelimeler ve genel ayarlar.
 
-Bot, .github/workflows/ekap_bot.yml dosyasındaki cron ayarına göre her gün otomatik olarak çalışacaktır. Dilerseniz Actions sekmesinden manuel olarak da tetikleyebilirsiniz.
+local_sent_ihales.txt: Botun daha önce gönderdiği ihaleleri unutmamak için kullandığı yerel veritabanı.
 
-📋 Örnek Telegram Çıktısı
+⚖️ Yasal Uyarı
+Bu proje sadece eğitim ve kişisel verimlilik amaçlıdır. Kamu platformlarının kullanım koşullarına ve veri çekme (scraping) politikalarına uyulması kullanıcının sorumluluğundadır.
+
+HLC Endüstriyel Otomasyon & EPC Çözümleri için geliştirilmiştir. 🚀
+
+Küçük Bir Tavsiye:
+GitHub'a yüklemeden önce klasöründe bir .gitignore dosyası oluşturup içine şunları yazmayı unutma; böylece özel şifrelerin (Token) ve gereksiz dosyalar internete sızmaz:
+
 Plaintext
-⚡ YENİ EPC & ALTYAPI İHALESİ 💧
-
-📌 İKN: 2026/123456
-📅 Tarih: 15.04.2026
-📋 İhale: 10.000 m3 Kapasiteli İleri Biyolojik Atıksu Arıtma Tesisi ve SCADA Otomasyonu
-🏢 Kurum: X Büyükşehir Belediyesi Su ve Kanalizasyon İdaresi
-🏗️ Tür / Usul: Yapım İşi | Açık İhale
-💰 Yaklaşık Bütçe: 145.500.000,00 TL
-⚖️ İtirazen Şikayet Başvuru Bedeli: 194.085 TL
-⏰ Son Teklif: 15.04.2026 10:00
-
-(Kopyalamak için İKN ve Tarih'in üzerine dokunun)
-#HLC #EPC #Altyapı
+.env
+venv/
+__pycache__/
+local_sent_ihales.txt
+*.png
 Geliştirici Notu: Bu sistem, manuel ihale tarama süreçlerinde harcanan yüzlerce saatlik insan emeğini sıfıra indirmek ve şirket portföyüne en uygun projeleri "ilk duyan" olmak amacıyla yüksek mühendislik standartlarında tasarlanmıştır.
