@@ -1,25 +1,15 @@
-import cloudscraper
 import time
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from config import SEARCH_KEYWORDS, NEGATIF_KELIMELER
-import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+from playwright.sync_api import sync_playwright
 
 class EKAPAPI:
     def __init__(self):
         self.base_url = "https://ekapv2.kik.gov.tr/b_ihalearama/api/Ihale"
         self.search_keywords = SEARCH_KEYWORDS
-        self.session = cloudscraper.create_scraper(
-            browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
-        )
-        self.session.headers.update({
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json',
-            'Origin': 'https://ekapv2.kik.gov.tr',
-            'Referer': 'https://ekapv2.kik.gov.tr/ekap/search'
-        })
+        self.ihale_cache = {}  # İKN'leri aklında tutması için hafıza
+        self.fiyat_cache = {}  # Gizli fiyatları aklında tutması için hafıza
 
     def turkce_buyut(self, metin):
         if not metin: return ""
@@ -46,7 +36,7 @@ class EKAPAPI:
             temiz_sayi = s.replace('.', '').replace(',', '.')
             try:
                 deger = float(temiz_sayi)
-                if deger >= 5000000: # 5 MİLYON TL
+                if deger >= 5000000:  # 5 MİLYON TL
                     gecerli_butce_var_mi = True
                     break
             except ValueError:
@@ -105,48 +95,6 @@ class EKAPAPI:
             filtered.append(ihale)
         return filtered
 
-    def get_ihale_detail(self, ihale_id):
-        url = f"{self.base_url}/GetById/{ihale_id}"
-        print(f"\n🕵️ DETAY RÖNTGENİ -> ID: {ihale_id}")
-        print(f"🕵️ GİDİLEN URL: {url}")
-        
-        try:
-            response = self.session.get(url, timeout=10)
-            print(f"🕵️ YANIT KODU: {response.status_code}")
-            
-            if response.status_code == 200:
-                detail = response.json()
-                print(f"🕵️ GELEN JSON ANAHTARLARI: {list(detail.keys())}")
-                
-                # Eğer EKAP verileri 'data' adında bir alt klasöre sakladıysa:
-                if 'data' in detail and isinstance(detail['data'], dict):
-                    detail = detail['data']
-                    print("🕵️ 'data' klasörü bulundu, içine girildi.")
-                
-                son_teklif = detail.get('teklifVermeGunSaat') or detail.get('ihaleTarihSaat') or 'Belirtilmemiş'
-                ihale_durumu = detail.get('ihaleDurum') or detail.get('ihaleDurumu') or detail.get('ihaleDurumuAciklama') or 'Sistemde Görünmüyor'
-                isin_yeri = detail.get('isinYapilacagiYer') or detail.get('isYapilacagiYer') or detail.get('isYeri') or 'Sistemde Görünmüyor'
-                ihale_yeri = detail.get('ihaleYeri') or detail.get('ihaleninYapilacagiYer') or detail.get('ihaleAdresi') or 'Sistemde Görünmüyor'
-                
-                return {
-                    'son_teklif': son_teklif,
-                    'ihale_durumu': str(ihale_durumu),
-                    'isin_yeri': str(isin_yeri),
-                    'ihale_yeri': str(ihale_yeri)
-                }
-            else:
-                print(f"⚠️ API Hata Mesajı: {response.text[:150]}")
-                
-        except Exception as e:
-            print(f"❌ KOD ÇÖKTÜ: {e}")
-            
-        return {
-            'son_teklif': 'Belirtilmemiş',
-            'ihale_durumu': 'Sistemden Çekilemedi',
-            'isin_yeri': 'Sistemden Çekilemedi',
-            'ihale_yeri': 'Sistemden Çekilemedi'
-        }
-
     def _fiyat_formatla(self, deger):
         try:
             temiz = str(deger).replace('.', '').replace(',', '.').replace(' TL', '').strip()
@@ -155,40 +103,134 @@ class EKAPAPI:
         except (ValueError, TypeError):
             return str(deger)
 
-    def search_ihaleler_api(self, keyword=""):
-        try:
-            # -1 HATASININ ÇÖZÜMÜ: API'nin istediği güncel tarih formatını geri koyduk.
-            bugun_str = datetime.now().strftime("%Y-%m-%dT00:00:00")
-            search_payload = {
-                "searchText": keyword,
-                "filterType": None,
-                "ikNdeAra": True,
-                "ihaleAdindaAra": True,
-                "searchType": "GirdigimGibi",
-                "paginationSkip": 0,
-                "paginationTake": 100,
-                "ihaleTarihiBaslangic": bugun_str,
-                "ihaleTarihBaslangic": bugun_str
-            }
-            response = self.session.post(
-                f"{self.base_url}/GetListByParameters",
-                json=search_payload,
-                timeout=20
-            )
-            if response.status_code == 200:
-                data = response.json()
-                return self.parse_api_response(data, keyword)
-            return []
-        except Exception:
-            return []
+    # 🕵️‍♂️ POPUP DEDEKTİFİ: Tıklamayı simüle edip API'den dönen GetById isteğini havada yakalar
+    def get_ihale_detail(self, ihale_id):
+        ikn = self.ihale_cache.get(str(ihale_id))
 
+        if not ikn or ikn == 'N/A':
+            return {
+                'son_teklif': 'Belirtilmemiş',
+                'ihale_durumu': 'Sistemden Çekilemedi',
+                'isin_yeri': 'Sistemden Çekilemedi',
+                'ihale_yeri': 'Sistemden Çekilemedi'
+            }
+            
+        print(f"\n🕵️‍♂️ [POPUP DEDEKTİFİ] {ikn} ihaleye tıklanıyor...")
+        
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+                page = context.new_page()
+                
+                # Siteye gir
+                page.goto("https://ekapv2.kik.gov.tr/ekap/search", wait_until="domcontentloaded", timeout=60000)
+                time.sleep(2)
+                
+                # Kutuya sadece o ihalenin İKN'sini yaz ve Enter'a bas
+                search_input = page.locator("input[placeholder='Ara']:visible").first
+                search_input.fill(ikn)
+                
+                with page.expect_response(lambda r: "GetListByParameters" in r.url, timeout=15000):
+                    search_input.press("Enter")
+                
+                time.sleep(3) # Tablonun güncellenmesi için nefes
+                
+                # HEDEF: İlgili İKN'ye tıkla ve arka planda çalışan GetById isteğini yakala
+                with page.expect_response(lambda r: "GetById" in r.url, timeout=15000) as detail_res_info:
+                    page.locator(".dx-datagrid").get_by_text(ikn, exact=False).first.click(force=True)
+                
+                detail_response = detail_res_info.value
+                if detail_response.status == 200:
+                    detail = detail_response.json()
+                    
+                    # 🎉 Tıklamışken gizli bütçeyi de alıp hafızaya atıyoruz
+                    detay_fiyat = detail.get('yaklasikMaliyet') or detail.get('yaklasikMaliyetTL') or detail.get('tahminiMaliyet')
+                    if detay_fiyat:
+                        self.fiyat_cache[str(ihale_id)] = self._fiyat_formatla(detay_fiyat)
+                    
+                    son_teklif = detail.get('teklifVermeGunSaat') or detail.get('ihaleTarihSaat') or 'Belirtilmemiş'
+                    ihale_durumu = detail.get('ihaleDurum') or detail.get('ihaleDurumu') or detail.get('ihaleDurumuAciklama') or 'Sistemde Görünmüyor'
+                    isin_yeri = detail.get('isinYapilacagiYer') or detail.get('isYapilacagiYer') or 'Sistemde Görünmüyor'
+                    ihale_yeri = detail.get('ihaleYeri') or detail.get('ihaleninYapilacagiYer') or 'Sistemde Görünmüyor'
+                    
+                    browser.close()
+                    print(f"✅ Popup verileri çalındı: {ikn}")
+                    return {
+                        'son_teklif': str(son_teklif),
+                        'ihale_durumu': str(ihale_durumu),
+                        'isin_yeri': str(isin_yeri),
+                        'ihale_yeri': str(ihale_yeri)
+                    }
+                else:
+                    print(f"⚠️ Popup Hatası: {detail_response.status}")
+                browser.close()
+                
+        except Exception as e:
+            print(f"❌ Tıklama Hatası ({ikn}): {e}")
+            
+        return {
+            'son_teklif': 'Belirtilmemiş',
+            'ihale_durumu': 'Sistemden Çekilemedi',
+            'isin_yeri': 'Sistemden Çekilemedi',
+            'ihale_yeri': 'Sistemden Çekilemedi'
+        }
+
+    def get_ihale_fiyat(self, ihale_id, liste_fiyati):
+        if liste_fiyati and str(liste_fiyati) not in ('', 'None', 'Sistemde Görünmüyor'):
+            return self._fiyat_formatla(liste_fiyati)
+            
+        if str(ihale_id) in self.fiyat_cache:
+            return self.fiyat_cache[str(ihale_id)]
+            
+        return 'Sistemde Görünmüyor'
+
+    # ANA ARAMA MOTORU
     def search_ihaleler(self):
         all_results = []
-        for kw in self.search_keywords:
-            print(f"🔍 Taranıyor: {kw}")
-            results = self.search_ihaleler_api(kw)
-            all_results.extend(results)
-            time.sleep(1)
+        print("\n🤖 Hayalet Tarayıcı (Playwright) Başlatılıyor...")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                viewport={'width': 1920, 'height': 1080},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+
+            try:
+                print("🌐 EKAP Arama Sayfasına Giriliyor...")
+                page.goto("https://ekapv2.kik.gov.tr/ekap/search", wait_until="domcontentloaded", timeout=60000)
+                time.sleep(2)
+            except Exception as e:
+                print(f"❌ EKAP sitesine ulaşılamadı: {e}")
+                browser.close()
+                return []
+
+            for kw in self.search_keywords:
+                print(f"\n🔍 Taranıyor: {kw}")
+                try:
+                    search_input = page.locator("input[placeholder='Ara']:visible").first
+                    search_input.fill(kw)
+
+                    with page.expect_response(lambda response: "GetListByParameters" in response.url, timeout=15000) as response_info:
+                        search_input.press("Enter")
+
+                    response = response_info.value
+                    if response.status == 200:
+                        data = response.json()
+                        total = data.get('totalCount', 'Bilinmiyor')
+                        print(f"🕵️ [{kw}] Toplam {total} ihale var.")
+                        results = self.parse_api_response(data, kw)
+                        all_results.extend(results)
+                    else:
+                        print(f"⚠️ [{kw}] Hata: {response.status}")
+
+                except Exception as e:
+                    print(f"❌ [{kw}] Aranırken zaman aşımı: {e}")
+                    page.reload(wait_until="domcontentloaded", timeout=60000)
+                    time.sleep(2)
+
+            browser.close()
 
         unique = []
         seen = set()
@@ -197,18 +239,17 @@ class EKAPAPI:
             if uid not in seen:
                 unique.append(i)
                 seen.add(uid)
+
         return unique
 
     def parse_api_response(self, data, keyword):
         ihaleler = []
         bugun = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
         if 'list' not in data: return ihaleler
 
         for item in data['list']:
             raw_tarih = item.get('ihaleTarihSaat', '')
             
-            # --- GEÇMİŞ TARİH FİLTRESİ (ESKİLERİ ÇÖPE ATAR) ---
             try:
                 if 'T' in raw_tarih:
                     ihale_tarihi = datetime.strptime(raw_tarih.split('T')[0], "%Y-%m-%d")
@@ -217,55 +258,18 @@ class EKAPAPI:
                 else:
                     ihale_tarihi = bugun
                 
-                # İhale tarihi bugünden daha eskiyse, listeye eklemeden atla!
                 if ihale_tarihi < bugun:
                     continue
             except Exception:
                 pass
-            # --------------------------------------------------
 
             ikn = item.get('ikn', 'N/A')
-            ihale_adi = item.get('ihaleAdi', 'N/A')
-            guvenli_url = "https://ekapv2.kik.gov.tr/ekap/search"
-
-            turu_kodu = str(item.get('ihaleTuru', ''))
-            if turu_kodu == '1': tur_adi = "Mal Alımı"
-            elif turu_kodu == '2': tur_adi = "Hizmet Alımı"
-            elif turu_kodu == '3': tur_adi = "Yapım İşi"
-            elif turu_kodu == '4': tur_adi = "Danışmanlık"
-            else:
-                adi_buyuk = self.turkce_buyut(ihale_adi)
-                if any(k in adi_buyuk for k in ["YAPIM", "İNŞAAT", "TESİSİ", "İKMAL"]): tur_adi = "Yapım İşi (Tahmini)"
-                elif any(k in adi_buyuk for k in ["ALIMI", "MALZEME"]): tur_adi = "Mal Alımı (Tahmini)"
-                else: tur_adi = item.get('ihaleTuruAciklama', 'Belirtilmemiş')
-
-            usul_adi = item.get('ihaleUsulAciklama') or item.get('ihaleUsul', 'Belirtilmemiş')
-            if "OPEN" in self.turkce_buyut(usul_adi): usul_adi = "Açık İhale"
-
-            ihaleler.append({
-                'ihale_no': ikn,
-                'ihale_adi': ihale_adi,
-                'kurum': item.get('idareAdi', 'N/A'),
-                'ihale_tarihi': raw_tarih.replace('T', ' ')[:16] if 'T' in raw_tarih else raw_tarih,
-                'ihale_url': guvenli_url,
-                'ihale_id': str(item.get('id', '')),
-                'ihale_tutari': item.get('yaklasikMaliyet', ''),
-                'ihale_turu': tur_adi,
-                'ihale_usulu': usul_adi,
-                'aranan_kelime': keyword
-            })
-
-        return ihaleler
-        ihaleler = []
-        if 'list' not in data: return ihaleler
-
-        for item in data['list']:
-            raw_tarih = item.get('ihaleTarihSaat', '')
+            ihale_id = str(item.get('id', ''))
             
-            # SESSİZ KATİL İMHA EDİLDİ! 
-            # (Burada "tarih geçmişse atla" diyen kod vardı, onu tamamen sildik. Artık EKAP'tan gelen her şey havuza girecek)
+            # HAFIZAYA KAYIT: Popup dedektifi için İKN'leri kaydediyoruz!
+            if ihale_id and ikn != 'N/A':
+                self.ihale_cache[ihale_id] = ikn
 
-            ikn = item.get('ikn', 'N/A')
             ihale_adi = item.get('ihaleAdi', 'N/A')
             guvenli_url = "https://ekapv2.kik.gov.tr/ekap/search"
 
