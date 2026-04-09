@@ -1,5 +1,5 @@
 Markdown
-# 🚀 HLC EPC İhale Radarı & Otomasyon Botu
+İhale Radarı & Otomasyon Botu
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated-2088FF?style=for-the-badge&logo=github-actions)
