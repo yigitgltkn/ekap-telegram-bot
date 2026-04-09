@@ -22,8 +22,6 @@ Standart botların aksine, bu sistem EKAP'ın modern Angular altyapısını ve S
 
 ## 🛠️ Kurulum Rehberi
 
-### 1. Ortamı Hazırlayın
-```bash
 python -m venv venv
 # Windows:
 .\venv\Scripts\activate
@@ -35,10 +33,7 @@ TELEGRAM_BOT_TOKEN=123456789:ABCDEF...
 ADMIN_CHAT_ID=-100123456789
 
 python main.py
----
 
-### 4. Bölüm: Mimari ve Akış (Interactive Section)
-```markdown
 ## ⚙️ Akıllı Filtreleme Sistemi
 
 Sistem, `config.py` üzerinden yönetilen iki katmanlı bir filtre kullanır:
