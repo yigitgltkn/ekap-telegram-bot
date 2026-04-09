@@ -1,18 +1,67 @@
-Markdown
-İhale Radarı & Otomasyon Botu
+# 💧 HLC EPC Tender Intelligence
+> **An Advanced Automated Procurement Tracking System for EPC & Industrial Automation**
 
-![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated-2088FF?style=for-the-badge&logo=github-actions)
-![Telegram API](https://img.shields.io/badge/Telegram-Bot-2CA5E0?style=for-the-badge&logo=telegram)
+![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Automated-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-Bot_API-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
- HLC EPC Tender IntelligenceAn Advanced Automated Procurement Tracking System for EPC & Industrial AutomationHLC EPC Tender Intelligence, EKAP (Elektronik Kamu Alımları Platformu) üzerindeki devasa veri yığınını gerçek zamanlı olarak tarayan, GES, RES, HES, SCADA ve Altyapı gibi yüksek bütçeli EPC projelerini ayıklayan bir "Business Intelligence" (İş Zekası) aracıdır.🎯 Neden Bu Proje?EKAP'ın modern Angular altyapısı ve sıkı SSL güvenlik duvarları, standart botların veri çekmesini zorlaştırır. Bu sistem, v6.0 Hayalet Motor teknolojisi ile:Anti-Bot Bypass: Sunucuyu "gerçek bir kullanıcı" olduğuna ikna eden TLS/SSL parmak izi taklidi yapar.EPC Focused: Sadece "ihale" değil, "yapım ve mühendislik" ağırlıklı işleri filtreler (Müşavirlik veya küçük malzeme alımlarını eler).Zero Duplication: Akıllı set-logic hafızası ile aynı ihaleyi asla ikinci kez raporlamaz.🛠️ Temel ÖzelliklerÖzellikAçıklama🔍 Multi-Vector SearchSCADA, Otomasyon, GES gibi anahtar kelimelerle çapraz tarama.🛡️ Smart Filtering5M TL altındaki veya "Negatif Liste"deki işlerin otomatik eliminasyonu.🚀 Direct API AccessSayfa yüklemeden, doğrudan sunucu endpoint'lerinden saniyelik veri çekimi.📱 Telegram DashboardİKN, Tarih ve Kurum bilgilerini Telegram üzerinden interaktif linklerle sunma.🧠 Çalışma Mantığı (Secret Sauce)Sistem üç ana fazda çalışır:Scouting: Playwright motoru EKAP ana sayfasında hedef anahtar kelimeleri simüle eder.Deep Crawling: Bulunan ihalelerin detayları, EKAP sunucularına atılan gizli POST istekleri (v5.2 API Engine) ile saniyeler içinde çözülür.Intelligence Reporting: Elde edilen saf veri, şirket içi filtrelere tabi tutulur ve sadece "Yüksek Potansiyelli" olanlar Telegram'a iletilir.🚀 Hızlı Başlangıç1. Ortamı HazırlayınBashpython -m venv venv
-source venv/bin/activate  # Windows: .\venv\Scripts\activate
-pip install -r requirements.txt
+**HLC EPC Tender Intelligence**, EKAP (Elektronik Kamu Alımları Platformu) üzerindeki devasa veri yığınını gerçek zamanlı olarak tarayan, **GES, RES, HES, SCADA ve Altyapı** gibi yüksek bütçeli EPC projelerini ayıklayan profesyonel bir otomasyon çözümüdür.
+
+## 🎯 Proje Vizyonu
+
+Standart botların aksine, bu sistem EKAP'ın modern Angular altyapısını ve SSL güvenlik duvarlarını aşmak için optimize edilmiştir.
+
+| Özellik | Açıklama |
+| :--- | :--- |
+| **🔍 Multi-Vector Search** | SCADA, Otomasyon, GES, RES gibi anahtar kelimelerle çapraz tarama. |
+| **🛡️ Smart Filtering** | EPC dışı işlerin (Danışmanlık, küçük malzeme alımı vb.) otomatik eliminasyonu. |
+| **🚀 Direct Data Extraction** | Sayfa yükleme derdi olmadan, saf veri çekme hızı. |
+| **📱 Telegram Dashboard** | İKN, Tarih ve Kurum bilgilerini Telegram üzerinden interaktif linklerle sunma. |
+| **🧠 Intelligent Memory** | Gönderilen ihaleleri asla tekrar göndermeyen yerel veritabanı. |
+
+## 🛠️ Kurulum Rehberi
+
+### 1. Ortamı Hazırlayın
+```bash
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Paketleri yükleyin:
+pip install requests python-dotenv playwright
 playwright install chromium
-2. Yapılandırma (.env)Proje kök dizininde bir .env dosyası oluşturun:Kod snippet'iTELEGRAM_BOT_TOKEN=123456789:ABCDEF...
+
+TELEGRAM_BOT_TOKEN=123456789:ABCDEF...
 ADMIN_CHAT_ID=-100123456789
-3. ÇalıştırınBashpython main.py
-⚙️ Özelleştirme (config.py)Proje tamamen modülerdir. Sektörünüzü genişletmek için SEARCH_KEYWORDS listesine yeni dikeyler ekleyebilirsiniz:Python# Örnek: Yenilenebilir Enerji dikeyi ekleme
+
+python main.py
+---
+
+### 4. Bölüm: Mimari ve Akış (Interactive Section)
+```markdown
+## ⚙️ Akıllı Filtreleme Sistemi
+
+Sistem, `config.py` üzerinden yönetilen iki katmanlı bir filtre kullanır:
+
+1. **Pozitif Filtre:** Belirlenen EPC sektörlerine (Enerji, Su, Otomasyon) odaklanır.
+2. **Negatif Filtre (Blacklist):** "Bakım", "Onarım", "Malzeme Alımı", "Müşavirlik" gibi EPC kapsamı dışındaki işleri otomatik olarak eler.
+
+```python
+# Örnek Sektör Ekleme:
 ENERJI_KELIMELERI = ["Güneş Enerjisi", "GES", "RES", "HES"]
-🗺️ Yol Haritası (Roadmap)[x] API tabanlı hızlı veri çekme motoru.[x] SSL/TLS handshake sorunlarının çözümü.[ ] AI-Powered Analysis: İhale dökümanlarını (PDF) okuyup teknik yeterlilik analizi yapma.[ ] Web Dashboard: Geçmiş ihalelerin grafiksel analizi.[ ] Multi-Admin: Farklı departmanlara farklı ihale kategorileri gönderme.🤝 Katkıda BulunmaBu bir açık kaynak EPC çözümüdür. Katkılarınızı (Pull Request) bekliyoruz!Projeyi Fork'layın.Özelliğinizi geliştirin (git checkout -b feature/AmazingFeature).Commit'leyin (git commit -m 'Add: New Anti-Bot Logic').Push'layın (git push origin feature/AmazingFeature).Pull Request açın.📬 İletişim & DestekHLC EPC Automation Team📧 [Sizin Mail Adresiniz]🔗 [Varsa Şirket Web Siteniz]Küçük Bir İpucu:GitHub sayfanın sağ tarafındaki "About" kısmına şu etiketleri (Tags) mutlaka ekle:python, scraping, playwright, automation, procurement, bot, telegram-bot, epc, scada.
+
+## 🗺️ Gelecek Planları (Roadmap)
+
+- [x] API tabanlı hızlı veri çekme motoru.
+- [x] SSL/TLS handshake sorunlarının çözümü.
+- [ ] **AI-Powered Analysis:** İhale dökümanlarını (PDF) okuyup teknik yeterlilik analizi yapma.
+- [ ] **Web Dashboard:** Geçmiş ihalelerin grafiksel analizi.
+
+---
+
+## 🤝 Katkıda Bulunma
+
+Bu bir EPC otomasyon çözümüdür. Katkılarınızı (Pull Request) her zaman bekliyoruz!
+
+---
+**HLC EPC Automation Team** 🚀
