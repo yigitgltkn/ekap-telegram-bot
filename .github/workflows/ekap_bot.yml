@@ -2,24 +2,25 @@ name: HLC EPC Ihale Radari
 
 on:
   schedule:
-    # Hafta içi her gün (1-5), Türkiye saati 08:30 (UTC'de 05:30'a denk gelir)
-    - cron: '38 7 * * 1-5'
-  workflow_dispatch: # GitHub üzerinden manuel "Şimdi Çalıştır" butonu
+    # Türkiye saati 08:30 için (UTC 05:30)
+    - cron: '30 5 * * 1-5'
+  workflow_dispatch: 
 
 permissions:
-  contents: write # Botun yeni ihaleleri txt dosyasına yazıp kaydedebilmesi için
+  contents: write
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
       - name: Kodları Klonla
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v4 daha günceldir
 
       - name: Python 3.10 Kurulumu
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v5 daha günceldir
         with:
           python-version: '3.10'
+          cache: 'pip' # Kütüphaneleri önbelleğe alarak hızlandırır
 
       - name: Gerekli Kütüphaneleri Yükle
         run: |
@@ -33,10 +34,11 @@ jobs:
           ADMIN_CHAT_ID: ${{ secrets.ADMIN_CHAT_ID }}
         run: python main.py
 
-      - name: Bot Hafızasını (.txt) GitHub'a Geri Kaydet
+      - name: Bot Hafızasını Kaydet
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
-          git add local_sent_ihales.txt
-          git commit -m "🤖 Hafıza güncellendi: Yeni ihaleler işlendi" || echo "Yeni ihale yok, kayıt atlandı."
+          # database.txt yazarsan hafıza güncellenmez.
+          git add database.txt
+          git commit -m "🤖 Hafıza güncellendi: $(date +'%Y-%m-%d %H:%M')" || echo "Yeni ihale yok, kayıt atlandı."
           git push
