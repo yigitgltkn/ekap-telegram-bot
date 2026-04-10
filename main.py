@@ -1,315 +1,104 @@
-# ⚡ EKAP İhale Takip Botu
-
-<div align="center">
+import os
+import requests
+from datetime import datetime
+from dotenv import load_dotenv
+from ekap_api import EKAPAPI
+import time
+
+def main():
+    print("🖥️ HLC EPC İhale Servisi Başlatılıyor (Hafif Sürüm)...")
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(BASE_DIR, '.env')
+    sent_file = os.path.join(BASE_DIR, "database.txt")
+
+    load_dotenv(env_path)
+
+    bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    if not bot_token:
+        print("❌ HATA: TELEGRAM_BOT_TOKEN bulunamadı!")
+        return
+
+    try:
+        GROUP_ID = int(os.environ.get('ADMIN_CHAT_ID'))
+    except (TypeError, ValueError):
+        print("❌ HATA: ADMIN_CHAT_ID bulunamadı veya geçersiz!")
+        return
+
+    # Hafızayı Yükle
+    if not os.path.exists(sent_file):
+        with open(sent_file, 'a', encoding='utf-8'): pass
+
+    with open(sent_file, 'r', encoding='utf-8') as f:
+        sent_ihales = {line.strip() for line in f if line.strip()}
+
+    ekap_api = EKAPAPI()
+    print(f"\n🔍 [{datetime.now().strftime('%H:%M:%S')}] İhaleler kontrol ediliyor...")
+
+    try:
+        ham_ihaleler = ekap_api.search_ihaleler()
+        real_ihaleler = ekap_api.filter_ozel_ihaleler(ham_ihaleler)
+        
+        yeni_bulunan_sayisi = 0
+
+        for ihale in real_ihaleler:
+            ikn = str(ihale['ihale_no']).strip()
+
+            if ikn in sent_ihales:
+                continue
+
+            yeni_bulunan_sayisi += 1
+            print(f"✅ YENİ İHALE BULUNDU: {ikn}")
+
+            raw_tarih = ihale.get('ihale_tarihi', '')
+            sadece_tarih = raw_tarih[:10] if raw_tarih else 'Belirtilmemiş'
+
+            # GÖRSELDEKİ FORMATIN BİREBİR AYNISI (Sade ve Net)
+            msg = (
+                "<b>⚡ YENİ EPC & ALTYAPI İHALESİ</b> 💧\n\n"
+                f"<b>📌 İKN:</b> <code>{ihale['ihale_no']}</code>\n"
+                f"<b>📅 İlan Tarihi:</b> <code>{sadece_tarih}</code>\n"
+                f"<b>📋 İhale:</b> {ihale['ihale_adi']}\n"
+                f"<b>🏢 İdare:</b> {ihale['kurum']}\n"
+                f"<b>🏗️ Tür / Usul:</b> {ihale['ihale_turu']} | {ihale['ihale_usulu']}\n\n"
+                "<i>(Kopyalamak için İKN ve Tarih'in üzerine dokunun)</i>\n"
+                "#HLC #EPC #Altyapı"
+            )
+
+            try:
+                telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                payload = {
+                    "chat_id": GROUP_ID,
+                    "text": msg,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True,
+                    "reply_markup": {
+                        "inline_keyboard": [[
+                            {"text": "🔗 EKAP Arama Sayfasına Git", "url": ihale['ihale_url']}
+                        ]]
+                    }
+                }
+
+                response = requests.post(telegram_url, json=payload, timeout=10)
+
+                if response.status_code == 200:
+                    with open(sent_file, 'a', encoding='utf-8') as f:
+                        f.write(f"{ikn}\n")
+                    sent_ihales.add(ikn)
+                    print(f"💾 {ikn} Telegram'a atıldı.")
+                    # Peş peşe atarken Telegram'ı kızdırmamak için 2 saniye uyu
+                    time.sleep(3)
+                
+                else:
+                    print(f"⚠️ Telegram hatası ({ikn}): {response.status_code}")
+
+            except Exception as e:
+                print(f"❌ Gönderim hatası ({ikn}): {e}")
+
+        print(f"\n✅ İşlem başarıyla tamamlandı. {yeni_bulunan_sayisi} ihale bildirildi.")
+
+    except Exception as e:
+        print(f"❌ Kritik hata: {e}")
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-Headless-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)
-![Telegram](https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)
-![License](https://img.shields.io/badge/Lisans-MIT-yellow?style=for-the-badge)
-
-**Türkiye'nin kamu ihale platformu EKAP'ı gerçek zamanlı olarak izleyen,**  
-**EPC & Altyapı projelerini akıllı filtreleyip anında Telegram'a bildiren otomasyon sistemi.**
-
-</div>
-
----
-
-## 📌 İçindekiler
-
-- [Proje Hakkında](#-proje-hakkında)
-- [Mimari](#-mimari)
-- [Özellikler](#-özellikler)
-- [Kurulum](#-kurulum)
-- [Konfigürasyon](#-konfigürasyon)
-- [Kullanım](#-kullanım)
-- [Akış Diyagramı](#-akış-diyagramı)
-- [Klasör Yapısı](#-klasör-yapısı)
-- [Katkı Sağlama](#-katkı-sağlama)
-
----
-
-## 🎯 Proje Hakkında
-
-Bu sistem, **HLC EPC** firmaları için özelleştirilmiş bir kamu ihale izleme botudur. EKAP (Elektronik Kamu Alımları Platformu) üzerindeki ihaleleri headless browser ile tarar, akıllı filtreleme algoritması ile küçük ve ilgisiz ihaleleri eleyerek yalnızca büyük ölçekli **EPC, altyapı, arıtma ve otomasyon** projelerini tespit eder. Bulunan ihaleler anında **Telegram grubu** üzerinden ekibe bildirilir.
-
-> Sistem, yalnızca API sorgularına dayanmaz. Gizli bütçe ve detay bilgilerini elde edebilmek için **Popup Dedektif** adı verilen özel bir mekanizma ile ihale tıklamalarını simüle ederek arka planda çalışan API isteklerini yakalar.
-
----
-
-## 🏗️ Mimari
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        main.py                              │
-│          Orkestrasyon & Telegram Bildirim Katmanı           │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-          ┌─────────────▼──────────────┐
-          │         ekap_api.py        │
-          │   EKAP Tarama & Filtreleme │
-          └──────┬──────────┬──────────┘
-                 │          │
-    ┌────────────▼──┐  ┌────▼────────────────┐
-    │  search_      │  │  get_ihale_detail()  │
-    │  ihaleler()   │  │  🕵️ Popup Dedektif   │
-    │  Playwright   │  │  Playwright          │
-    └───────────────┘  └─────────────────────┘
-```
-
-| Bileşen | Görev |
-|---|---|
-| `main.py` | Ana orkestrasyon, Telegram mesaj gönderimi, hafıza yönetimi |
-| `ekap_api.py` | EKAP tarama motoru, filtreleme algoritması, bütçe hesaplayıcı |
-| `config.py` | Anahtar kelimeler, CPV kodları, kara liste, ortam değişkenleri |
-
----
-
-## ✨ Özellikler
-
-### 🔍 Çok Katmanlı Arama
-- **Anahtar Kelime Tarama** — `SCADA`, `Otomasyon`, `Telemetri`, `Arıtma`, `İsale Hattı` ve daha fazlası
-- **CPV Kodu Tarama** — Resmi KİK kodlarıyla başlıkta geçmeyen ihaleleri de yakalar
-- **Akıllı Tekilleştirme** — Aynı ihale birden fazla kelimede eşleşse bile yalnızca bir kez bildirilir
-
-### 🧠 EPC Filtre Motoru
-- **Bütçe Eşiği** — 5.000.000 TL altındaki ihaleler otomatik elenir
-- **İhale Türü Kontrolü** — Mal & Hizmet alımları için daha sıkı bütçe kriteri uygulanır
-- **Usul Dışı Bırakma** — `21/F (Pazarlık)` ve `Doğrudan Temin` ihaleleri atlanır
-- **Kara Liste** — Küçük malzeme, temizlik, akaryakıt gibi ilgisiz ihaleler regex ile elenir
-
-### 🕵️ Popup Dedektif Mekanizması
-Bazı ihaleler yaklaşık maliyetini API listesinde göstermez. Bu sistem:
-1. Headless Chromium ile EKAP'a gerçek bir tarayıcı gibi giriş yapar
-2. İlgili ihaleye tıklamayı simüle eder
-3. Arka planda tetiklenen `GetById` API isteğini ağ trafiğinden yakalar
-4. Gizli bütçeyi ve detay bilgileri (`son teklif tarihi`, `ihale yeri`, `işin yapılacağı yer`) alır
-
-### 📬 Telegram Bildirimleri
-- HTML formatlı, okunması kolay mesajlar
-- İKN ve tarih alanları `<code>` etiketi ile kopyalanabilir hâlde sunulur
-- **KİK İtirazen Şikayet Başvuru Bedeli** otomatik hesaplanır
-- Inline button ile EKAP arama sayfasına doğrudan bağlantı
-
-### 💾 Hafıza Sistemi
-- Bir kez bildirilen ihaleler `ihaleler_liste.txt` dosyasına yazılır
-- Bot yeniden başlatıldığında aynı ihaleler ikinci kez bildirilmez
-
----
-
-## 🚀 Kurulum
-
-### Gereksinimler
-
-- Python 3.10+
-- pip
-
-### Adımlar
-
-```bash
-# 1. Repoyu klonla
-git clone https://github.com/kullanici-adi/ekap-ihale-botu.git
-cd ekap-ihale-botu
-
-# 2. Sanal ortam oluştur ve aktifleştir
-python -m venv venv
-source venv/bin/activate        # Linux / macOS
-# venv\Scripts\activate         # Windows
-
-# 3. Bağımlılıkları yükle
-pip install -r requirements.txt
-
-# 4. Playwright tarayıcısını indir
-playwright install chromium
-
-# 5. Ortam değişkenlerini ayarla
-cp .env.example .env
-# .env dosyasını düzenle (aşağıya bak)
-```
-
-### `requirements.txt`
-
-```
-playwright
-python-dotenv
-requests
-```
-
----
-
-## ⚙️ Konfigürasyon
-
-### `.env` Dosyası
-
-```env
-TELEGRAM_BOT_TOKEN=123456789:ABCDEFGHijklmnopqrstuvwxyz
-ADMIN_CHAT_ID=-1001234567890
-```
-
-| Değişken | Açıklama |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | [@BotFather](https://t.me/BotFather) üzerinden alınan bot token'ı |
-| `ADMIN_CHAT_ID` | Bildirimlerin gönderileceği grup veya kanal ID'si (negatif olabilir) |
-
-### `config.py` — Arama Kelimelerini Özelleştirme
-
-```python
-# Sektöre özgü teknik anahtar kelimeler
-ANAHTAR_KELIMELER = ["SCADA", "Otomasyon", "RTU", ...]
-
-# Büyük altyapı projeleri
-EPC_KELIMELERI = ["Arıtma", "İsale Hattı", "Terfi Merkezi", ...]
-
-# KİK resmi CPV kodları
-CPV_KODLARI = ["45232100", "45252127", ...]
-
-# İlgisiz ihaleleri otomatik eleyecek kara liste
-NEGATIF_KELIMELER = ["Malzemeleri", "Yedek Parça", "Temizlik", ...]
-```
-
-### Bütçe Eşiği
-
-`ekap_api.py` içindeki `butce_uygun_mu()` fonksiyonunda eşiği değiştirebilirsiniz:
-
-```python
-if deger >= 5000000:   # ← Minimum bütçe (TL cinsinden)
-    gecerli_butce_var_mi = True
-```
-
----
-
-## 🖥️ Kullanım
-
-### Tek Seferlik Çalıştırma
-
-```bash
-python main.py
-```
-
-### Zamanlanmış Görev (Cron) — Linux/macOS
-
-Her 30 dakikada bir otomatik çalıştırmak için:
-
-```bash
-crontab -e
-```
-
-```cron
-*/30 * * * * /path/to/venv/bin/python /path/to/ekap-ihale-botu/main.py >> /var/log/ekap_bot.log 2>&1
-```
-
-### Zamanlanmış Görev — Windows (Task Scheduler)
-
-```
-Eylem: Program/script → python.exe
-Bağımsız değişkenler: C:\path\to\main.py
-Başlangıç yeri: C:\path\to\ekap-ihale-botu\
-```
-
----
-
-## 🔄 Akış Diyagramı
-
-```
-main.py başlar
-     │
-     ▼
-EKAP'ta her anahtar kelime için arama yap (Playwright)
-     │
-     ▼
-Ham ihaleleri topla & tekilleştir
-     │
-     ▼
-EPC Filtre Motoru:
-  ├─ Usul kontrolü (Pazarlık / Doğrudan → Eله)
-  ├─ Kara liste kontrolü (negatif kelimeler → ELE)
-  ├─ Bütçe eşiği kontrolü (< 5M TL → ELE)
-  ├─ İhale türü × bütçe kombinasyonu
-  └─ Anahtar kelime tam eşleşme kontrolü
-     │
-     ▼
-Hafıza kontrolü: Bu İKN daha önce gönderildi mi?
-  ├─ EVET → Atla
-  └─ HAYIR → Devam et
-               │
-               ▼
-          🕵️ Popup Dedektif:
-          Tıklamayı simüle et → GetById'ı yakala
-          Gizli bütçeyi & detayları al
-               │
-               ▼
-          KİK Şikayet Bedeli Hesapla
-               │
-               ▼
-          Telegram'a HTML mesaj gönder
-               │
-               ▼
-          İKN'yi hafızaya (txt) yaz
-```
-
----
-
-## 📁 Klasör Yapısı
-
-```
-ekap-ihale-botu/
-├── main.py               # Ana orkestrasyon & Telegram gönderimi
-├── ekap_api.py           # EKAP tarama motoru & Popup Dedektif
-├── config.py             # Anahtar kelimeler, CPV kodları, konfigürasyon
-├── .env                  # Gizli değişkenler (git'e ekleme!)
-├── .env.example          # Örnek .env şablonu
-├── ihaleler_liste.txt    # Gönderilen İKN hafızası (otomatik oluşur)
-├── requirements.txt      # Python bağımlılıkları
-└── README.md
-```
-
----
-
-## 📊 Telegram Mesaj Örneği
-
-```
-⚡ YENİ EPC & ALTYAPI İHALESİ 💧
-
-📌 İKN:     2025/123456
-📅 Tarih:   2025-09-15
-📋 İhale:   Merkezi Atıksu Arıtma Tesisi Yapımı
-🏢 Kurum:   Ankara Su ve Kanalizasyon İdaresi
-🏗️ Tür / Usul:  Yapım İşi | Açık İhale
-💰 Yaklaşık Bütçe:  45.000.000,00 TL
-⚖️ İtirazen Şikayet Bedeli:  194.085 TL
-⏰ Son Teklif:  2025-09-15 10:00
-
-(Kopyalamak için İKN ve Tarih'in üzerine dokunun)
-#HLC #EPC #Altyapı
-
-[ 🔗 EKAP Arama Sayfasına Git ]
-```
-
----
-
-## ⚠️ Önemli Notlar
-
-- **Headless Browser** kullanıldığından EKAP'ın yapısı değişirse `locator` ifadelerinin güncellenmesi gerekebilir.
-- Bot, EKAP'ta anlık olarak ilanı açık olan ihaleleri getirir; geçmiş tarihli ihaleler filtrelenir.
-- `.env` dosyasını asla `git push` etmeyin. `.gitignore`'a eklenmiş olduğundan emin olun.
-
----
-
-## 🤝 Katkı Sağlama
-
-1. Fork'layın
-2. Feature branch açın (`git checkout -b feature/yeni-ozellik`)
-3. Değişiklikleri commit'leyin (`git commit -m 'feat: yeni özellik eklendi'`)
-4. Branch'i push'layın (`git push origin feature/yeni-ozellik`)
-5. Pull Request açın
-
----
-
-## 📄 Lisans
-
-Bu proje [MIT Lisansı](LICENSE) altında dağıtılmaktadır.
-
----
-
-<div align="center">
-  <sub>HLC EPC için 🛠️ ile inşa edildi.</sub>
-</div>
+if __name__ == "__main__":
+    main()
